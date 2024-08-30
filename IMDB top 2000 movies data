@@ -1,0 +1,197 @@
+select * from
+practice.dbo.imdb_movies
+
+
+--create dummy table and insert data into new table 
+create table imdb_movies2
+as
+select * from
+practice.dbo.imdb_movies
+
+insert into practice.dbo.imdb_movies2 
+select * from practice.dbo.imdb_movies
+
+select * from
+practice.dbo.imdb_movies2
+
+select count(distinct genre)
+from
+practice.dbo.imdb_movies2
+
+select * from practice.dbo.imdb_movies2
+where genre !=  'Drama' and genre like 'Drama%'
+
+
+
+
+--check for duplicates
+with duplicates as
+(select *, rank() over (partition by movie_name, release_year, duration, imdb_rating, metascore, votes, genre, gross order by imdb_rating) as rating_rank
+from practice.dbo.imdb_movies2)
+select *, rating_rank from duplicates
+where rating_rank > 1
+
+
+
+
+
+
+--check on rows that have year column greater than 4 characters and update accordingly
+--some entries had a leading II
+select release_year from practice.dbo.imdb_movies2
+where len(release_year) > 4
+
+select release_year, substring(release_year,4,len(release_year)) from practice.dbo.imdb_movies2
+where release_year like 'II%'
+
+select release_year, substring(release_year,3,len(release_year)) from practice.dbo.imdb_movies2
+where release_year like 'I%'
+
+update practice.dbo.imdb_movies2
+set release_year = substring(release_year,4,len(release_year))
+where release_year like 'II%'
+
+update practice.dbo.imdb_movies2
+set release_year = substring(release_year,3,len(release_year))
+where release_year like 'I%'
+
+update practice.dbo.imdb_movies2
+set release_year = substring(release_year,1,4)
+where len(release_year)>4
+
+
+
+
+
+--check on gross sales and convert into integer from string
+--original format was $137.5M
+SELECT gross, substring (gross, 2, LEN(gross))
+FROM practice.dbo.imdb_movies2
+where gross != 'NA' 
+
+update practice.dbo.imdb_movies2
+set gross = SUBSTRING(gross, 2, LEN(gross))
+where gross != 'NA'
+
+SELECT gross FROM practice.dbo.imdb_movies2
+
+select gross, replace(gross, 'M',''),  len(replace(gross, 'M',''))
+FROM practice.dbo.imdb_movies2
+where gross != 'NA'
+
+
+SELECT CAST(REPLACE(gross, 'M', '') AS DECIMAL(10,2)) AS gross_in_millions
+FROM practice.dbo.imdb_movies2
+where gross != 'NA'
+
+update practice.dbo.imdb_movies2
+set gross = CAST(REPLACE(gross, 'M', '') AS DECIMAL(10,2))
+where gross != 'NA'
+
+
+
+
+
+
+--lots of genres had commas in them, creating a high distinct count of the field e.g action, crime, drama
+--check on genre and remove commas, selecting the first as main genre
+select genre from practice.dbo.imdb_movies2
+
+with first_genre as 
+   (SELECT genre,
+    SUBSTRING(genre,1, CHARINDEX(',', genre) - 1) AS first_g 
+FROM 
+   practice.dbo.imdb_movies2
+   where genre like '%,%' and genre not like 'Drama%')
+   select distinct first_g from first_genre
+   order by 1
+
+   update practice.dbo.imdb_movies2
+   set genre = SUBSTRING(genre,1, CHARINDEX(',', genre) - 1)
+   where genre like '%,%' and genre not like 'Drama%'
+
+   select distinct genre from practice.dbo.imdb_movies2
+
+
+
+--select the middle genre from rows where 'drama' came first
+--parsename requires a '.' instead of a ',' hence the use of 'replace'
+SELECT genre, PARSENAME(REPLACE(genre, ',', '.'), 2) AS middle_genre
+FROM practice.dbo.imdb_movies2
+where genre like 'drama%' and genre like '%,%,%'
+
+update practice.dbo.imdb_movies2
+set genre = PARSENAME(REPLACE(genre, ',', '.'), 2)
+where genre like 'drama%' and genre like '%,%,%'
+
+select distinct genre from practice.dbo.imdb_movies2
+order by 1
+
+
+
+--remove space after comma
+select distinct ltrim(substring (genre, charindex(',',genre) +1, len(genre)))
+from practice.dbo.imdb_movies2
+where genre like 'drama%' and genre like '%,%'
+
+update practice.dbo.imdb_movies2
+set genre = ltrim(substring (genre, charindex(',',genre) +1, len(genre)))
+where genre like 'drama%' and genre like '%,%'
+
+update practice.dbo.imdb_movies2
+set genre = ltrim(genre)
+
+update practice.dbo.imdb_movies2
+set genre = rtrim(genre)
+
+select genre , count (*) from practice.dbo.imdb_movies2
+group by genre
+order by 2
+
+
+
+
+
+--set gross to null where it reads 'NA'
+update practice.dbo.imdb_movies2
+set gross = null
+where gross = 'NA'
+
+select genre , max(gross) from practice.dbo.imdb_movies2
+group by genre
+order by 2
+
+
+
+
+--create new column to represent the gross sales in millions and drop original column
+alter table practice.dbo.imdb_movies2
+add gross_in_millions decimal(18,2)
+
+update practice.dbo.imdb_movies2
+set gross_in_millions = CONVERT(DECIMAL(18, 2),gross)
+
+select genre, max(gross_in_millions)
+from practice.dbo.imdb_movies2
+group by genre
+order by 2
+
+select genre, avg(gross_in_millions) as avg
+from practice.dbo.imdb_movies2
+group by genre
+order by 2
+
+alter table 
+drop column gross
+
+update practice.dbo.imdb_movies2
+set gross_in_millions = null
+where gross_in_millions = 0.00
+
+
+
+with rate_rank as 
+(select *, dense_rank() over (order by imdb_rating desc, votes desc) as rating_rank
+from practice.dbo.imdb_movies2)
+select * from rate_rank
+--where rating_rank = 9
