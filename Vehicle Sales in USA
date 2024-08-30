@@ -1,0 +1,318 @@
+--check distinct car makes
+select distinct (make) from dbo.vehicle_data
+
+
+
+--update and standardize car make
+update dbo.vehicle_data
+set make = 'Mercedes Benz'
+where make like 'Merc%'
+
+update dbo.vehicle_data
+set make = 'Land Rover'
+where make = 'landrover'
+
+update dbo.vehicle_data
+set make = ltrim(make)
+
+update dbo.vehicle_data
+set make = rtrim(make)
+
+update dbo.vehicle_data
+set make = 'Ford'
+where make like 'ford%'
+
+update dbo.vehicle_data
+set make = 'Chervolet'
+where make like 'chev%'
+
+update dbo.vehicle_data
+set make = 'BMW'
+where make = 'bmw'
+
+update dbo.vehicle_data
+set make = 'Dodge'
+where make = 'dodge'
+
+SELECT distinct UPPER(SUBSTRING(make, 1, 1)) + LOWER(SUBSTRING(make, 2, LEN(make) - 1))
+FROM dbo.vehicle_data
+WHERE make IS NOT NULL
+order by 1;
+
+update dbo.vehicle_data
+set make = UPPER(SUBSTRING(make, 1, 1)) + LOWER(SUBSTRING(make, 2, LEN(make) - 1))
+
+update dbo.vehicle_data
+set make = 'GMC'
+where make like 'GMC%'
+
+update dbo.vehicle_data
+set make = 'Dodge'
+where make like 'Dodge%'
+
+update dbo.vehicle_data
+set make = 'Hyundai'
+where make like 'Hyundai%'
+
+update dbo.vehicle_data
+set make = 'Volkswagen'
+where make = 'Vw'
+
+update dbo.vehicle_data
+set make = 'Mazda'
+where make like 'Mazda%'
+
+
+
+--check on car models
+select distinct make, model from dbo.vehicle_data
+order by 1
+
+
+
+
+-- trim whitespaces in car models
+update dbo.vehicle_data
+set model = ltrim(model)
+
+update dbo.vehicle_data
+set model = rtrim(model)
+
+
+-- capitalize first letter of car models
+select distinct make, upper(substring(model, 1,1)) + lower(substring(model, 2, len(model)-1))
+from dbo.vehicle_data
+order by 1
+
+update dbo.vehicle_data
+set model = upper(substring(model, 1,1)) + lower(substring(model, 2, len(model)-1))
+
+select make, model from dbo.vehicle_data
+where make is null
+
+select * from dbo.vehicle_data
+where sellingprice > mmr and make is not null
+order by 2
+
+select distinct body, count (*) from dbo.vehicle_data
+group by body
+order by 2
+
+
+
+
+
+
+
+--update transmission field
+update dbo.vehicle_data
+set transmission = null
+where transmission = 'sedan'
+
+select * from dbo.vehicle_data
+where color like '%1%'
+
+update dbo.vehicle_data
+set color = null
+where color like '%1%'
+or
+color like '%2%'
+or
+color like '%3%'
+or
+color like '%4%'
+or
+color like '%9%'
+or
+color like '%5%'
+
+
+
+
+--update and standardize color
+select distinct color from dbo.vehicle_data
+
+select distinct upper(substring(color,1,1)) + lower(substring(color,2,len(color)-1))
+from dbo.vehicle_data
+where color is not null
+
+update dbo.vehicle_data
+set color = upper(substring(color,1,1)) + lower(substring(color,2,len(color)-1))
+
+select saledate, len(saledate) from dbo.vehicle_data
+order by 2
+
+update dbo.vehicle_data
+set saledate = null
+where len (saledate) < 10
+
+
+select distinct state from dbo.vehicle_data
+
+update dbo.vehicle_data
+set state = null
+where len(state) > 3
+
+
+
+
+
+
+--update and standardize body type
+select distinct body from dbo.vehicle_data
+
+select * from dbo.vehicle_data 
+where body = 'koup'
+
+select distinct upper(substring(body, 1, 1)) + lower (substring(body , 2,len(body)-1)) from dbo.vehicle_data
+order by 1
+
+update dbo.vehicle_data
+set body = upper(substring(body, 1, 1)) + lower (substring(body , 2,len(body)-1))
+
+update dbo.vehicle_data
+set body = 'Regular Cab'
+where body like 'Regular%'
+
+
+update dbo.vehicle_data
+set body = 'SUV'
+where body like  'suv'
+
+
+
+
+--create a country column and assign Canada and USA accoordingly
+ALTER TABLE dbo.vehicle_data
+ADD Country VARCHAR(50);
+
+update dbo.vehicle_data
+set country = 'Canada'
+where state = 'ab'
+or state = 'ns'
+or state = 'on'
+or state = 'qc'
+
+update dbo.vehicle_data
+set country = 'USA'
+where state != 'ab'
+or state != 'ns'
+or state != 'on'
+or state != 'qc'
+
+select * from dbo.vehicle_data
+where country = 'USA' and condition is not null
+order by condition
+
+select year, make, model, condition, odometer, mmr, sellingprice from dbo.vehicle_data
+where condition <=15 and make is not null and model is not null and sellingprice > mmr
+order by 2,3
+
+
+
+
+--create column to calculate difference between selling price and estimated price
+ALTER TABLE dbo.vehicle_data
+ADD PriceMinusEstimate int;
+
+update dbo.vehicle_data
+set PriceMinusEstimate = sellingprice - mmr
+
+
+select make, model, year, priceminusestimate 
+from dbo.vehicle_data
+
+
+--check maximums, minimums and averages
+select max(priceminusestimate), min(priceminusestimate),avg(priceminusestimate)
+from dbo.vehicle_data
+
+select max(odometer), min(odometer), avg(odometer)
+from dbo.vehicle_data
+
+
+select max (condition), min(condition), avg(condition) 
+from dbo.vehicle_data
+
+select max(sellingprice), min (sellingprice), avg(sellingprice)
+from dbo.vehicle_data
+
+
+select max(mmr), min(mmr), avg(mmr)
+from dbo.vehicle_data
+
+
+
+
+
+select make, avg(priceminusestimate)
+from dbo.vehicle_data
+group by make
+order by 2 desc
+
+select state, avg(priceminusestimate)
+from dbo.vehicle_data
+group by state
+order by 2
+
+
+select model, avg(priceminusestimate)
+from dbo.vehicle_data
+group by model
+order by 2 desc
+
+
+
+--check if cars with higher condtion sold for higher on average
+select model, avg(condition), avg(sellingprice)
+from dbo.vehicle_data
+group by model
+order by 3 desc
+
+
+--check if cars with higher odometer reading sold for lower on average
+select model, avg(odometer), avg(sellingprice)
+from dbo.vehicle_data
+group by model
+order by 3 desc
+
+--check which car manufacturers have the best condition
+select make, avg(condition) condition, count (make)  vehicle_count, avg(sellingprice) price
+from dbo.vehicle_data
+where make is not null
+group by make
+order by 4 desc
+
+--cars with the most sales seemed to have average condition and average selling price. hence they may be selling for a reason not encapsulated by the data like design
+--cars with higher prices seemed to be in better condition on average
+
+
+
+--check on models which sold more than estimated price
+select model, count (*)
+FROM [Practice].[dbo].[Vehicle_data]
+where price_minus_estimate > 0
+group by model
+order by 2 desc
+
+select model, count (*)
+FROM [Practice].[dbo].[Vehicle_data]
+where model is not null
+group by model
+order by 2 desc
+
+--the more the cars sold,the higher the chances of selling more units above estimated price
+
+
+select make, count (*)
+FROM [Practice].[dbo].[Vehicle_data]
+where model is not null
+group by make
+order by 2 desc
+
+
+select make, count (*)
+FROM [Practice].[dbo].[Vehicle_data]
+where priceminusestimate > 0
+group by make
+order by 2 desc
